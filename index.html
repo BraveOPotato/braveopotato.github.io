@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abdullah Al Khafaji</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#000; }
+body { font-family:'JetBrains Mono',monospace; cursor:none; }
+
+#c { position:fixed; inset:0; z-index:0; }
+
+/* Custom cursor */
+#cur { position:fixed; width:8px; height:8px; border-radius:50%; background:#3dd68c;
+  pointer-events:none; z-index:9999; transform:translate(-50%,-50%);
+  box-shadow:0 0 12px #3dd68c, 0 0 24px rgba(61,214,140,.4); transition:width .2s,height .2s; }
+#cur-trail { position:fixed; width:28px; height:28px; border:1px solid rgba(61,214,140,.4);
+  border-radius:50%; pointer-events:none; z-index:9998; transform:translate(-50%,-50%); }
+
+
+
+/* HUD nav */
+#hud-nav {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:20px 40px; pointer-events:none;
+}
+.hud-logo {
+  font-family:'Orbitron',monospace; font-size:.85rem; font-weight:900;
+  color:#3dd68c; letter-spacing:3px; text-shadow:0 0 20px rgba(61,214,140,.5);
+  pointer-events:all;
+}
+.hud-links { display:flex; gap:4px; pointer-events:all; }
+.hud-link {
+  padding:6px 16px; border:1px solid rgba(61,214,140,.2); background:rgba(0,0,0,.4);
+  backdrop-filter:blur(8px); color:rgba(61,214,140,.6); font-size:.7rem;
+  letter-spacing:2px; cursor:none; transition:all .25s; text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;
+}
+.hud-link:hover { color:#3dd68c; border-color:rgba(61,214,140,.6); background:rgba(61,214,140,.08); }
+
+/* Bottom HUD */
+#hud-bottom {
+  position:fixed; bottom:0; left:0; right:0; z-index:100;
+  display:flex; justify-content:space-between; align-items:flex-end;
+  padding:20px 40px; pointer-events:none;
+}
+.hud-scroll-hint {
+  font-size:.65rem; color:rgba(61,214,140,.4); letter-spacing:3px;
+  text-transform:uppercase; display:flex; flex-direction:column; align-items:center; gap:8px;
+  animation:floatY 2s ease-in-out infinite;
+}
+.scroll-line { width:1px; height:32px; background:linear-gradient(180deg,#3dd68c,transparent); }
+@keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
+.hud-coords { font-size:.62rem; color:rgba(61,214,140,.3); letter-spacing:1px; text-align:right; }
+
+/* Progress bar */
+#progress { position:fixed; top:0; left:0; height:1px; background:linear-gradient(90deg,#3dd68c,#00c8e0);
+  z-index:200; transition:width .1s; box-shadow:0 0 8px #3dd68c; }
+
+/* Section panels — positioned by JS */
+.panel {
+  position:fixed; z-index:50; pointer-events:none;
+  opacity:0; transition:opacity .6s;
+}
+.panel.visible { opacity:1; pointer-events:all; }
+
+.panel-inner {
+  background:rgba(6,14,10,.82); border:1px solid rgba(61,214,140,.18);
+  backdrop-filter:blur(16px); padding:40px 44px;
+  box-shadow:0 0 60px rgba(0,0,0,.6), inset 0 0 40px rgba(61,214,140,.02);
+  position:relative; overflow:hidden;
+  max-height:85vh;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(61,214,140,.3) transparent;
+}
+.panel-inner::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg, rgba(61,214,140,.04) 0%, transparent 60%);
+  pointer-events:none;
+}
+.panel-inner::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(61,214,140,.5),transparent);
+}
+
+.p-tag { font-size:.65rem; color:rgba(61,214,140,.5); letter-spacing:4px; text-transform:uppercase; margin-bottom:12px; }
+.p-name { font-family:'Orbitron',monospace; font-size:clamp(2rem,5vw,4rem); font-weight:900;
+  color:#e6edf3; line-height:1.05; margin-bottom:8px; }
+.p-name em { color:#3dd68c; font-style:normal; display:block; font-size:.6em; }
+.p-sub { font-size:.82rem; color:rgba(171,178,191,.6); line-height:1.9; max-width:480px; margin-bottom:28px; font-style:italic; }
+.p-tags { display:flex; flex-wrap:wrap; gap:8px; }
+.ptag { padding:4px 12px; border:1px solid rgba(61,214,140,.2); font-size:.65rem;
+  color:rgba(61,214,140,.7); letter-spacing:1px; background:rgba(61,214,140,.04); }
+.ptag.red { border-color:rgba(224,108,117,.3); color:rgba(224,108,117,.8); background:rgba(224,108,117,.04); }
+.ptag.blue { border-color:rgba(97,175,239,.3); color:rgba(97,175,239,.8); background:rgba(97,175,239,.04); }
+
+/* Skill cards inside panel */
+.skill-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:8px; }
+.sk { border:1px solid rgba(61,214,140,.12); padding:18px 16px; background:rgba(0,0,0,.3); position:relative; overflow:hidden; }
+.sk::before { content:''; position:absolute; top:0; left:0; width:2px; height:100%; background:var(--acc); }
+.sk-num { font-family:'Orbitron',monospace; font-size:1.8rem; color:rgba(255,255,255,.04); font-weight:900;
+  position:absolute; bottom:8px; right:12px; }
+.sk-icon { font-size:1.4rem; margin-bottom:10px; }
+.sk-title { font-size:.72rem; font-weight:700; color:#dce4ec; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
+.sk-desc { font-size:.67rem; color:rgba(171,178,191,.5); line-height:1.7; }
+.sk-tags { margin-top:10px; display:flex; flex-wrap:wrap; gap:4px; }
+.sk-tag { font-size:.58rem; padding:1px 7px; border:1px solid rgba(255,255,255,.08); color:rgba(171,178,191,.45); }
+
+/* Snippet panel */
+.code-block { background:#0d1117; border:1px solid rgba(255,255,255,.07); border-radius:4px; overflow:hidden; margin-top:16px; }
+.code-bar { background:#161b22; padding:8px 16px; display:flex; gap:6px; align-items:center; border-bottom:1px solid rgba(255,255,255,.05); }
+.cd { width:10px; height:10px; border-radius:50%; }
+.code-pre { padding:16px 20px; font-size:.72rem; line-height:1.7; overflow:auto; max-height:200px; }
+.kw{color:#c678dd;} .fn-n{color:#61afef;} .ty{color:#e5c07b;} .st{color:#98c379;}
+.cm{color:#5c6370;font-style:italic;} .num{color:#d19a66;} .mac{color:#56b6c2;} .attr{color:#e06c75;}
+
+/* Linux panel specifics */
+.nf-grid { display:grid; grid-template-columns:auto 1fr; gap:24px; }
+.nf-art pre { font-size:.58rem; line-height:1.35; color:#e06c75; white-space:pre; }
+.nf-info { font-size:.72rem; line-height:2.1; }
+.nf-k { color:#3dd68c; font-weight:700; display:inline-block; min-width:100px; }
+.nf-v { color:#abb2bf; }
+.distros { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:20px; }
+.distro { border:1px solid rgba(61,214,140,.12); padding:12px 10px; text-align:center; }
+.distro-n { font-size:.65rem; color:#abb2bf; margin-top:4px; }
+.distro-l { font-size:.58rem; color:rgba(61,214,140,.5); }
+
+/* RHEL panel */
+.rhel-cols { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px; }
+.rcol h4 { font-size:.65rem; color:#e06c75; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; font-family:'Orbitron',monospace; }
+.rcol ul { list-style:none; display:flex; flex-direction:column; gap:6px; }
+.rcol li { font-size:.67rem; color:rgba(171,178,191,.5); line-height:1.5; display:flex; gap:6px; }
+.rcol li::before { content:'▸'; color:rgba(224,108,117,.5); flex-shrink:0; font-size:.55rem; margin-top:3px; }
+
+/* OSS projects */
+.oss-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:16px; }
+.oss-proj { border:1px solid rgba(61,214,140,.1); padding:14px 16px; }
+.oss-name { font-size:.75rem; color:#00c8e0; margin-bottom:4px; }
+.oss-desc { font-size:.63rem; color:rgba(171,178,191,.45); line-height:1.6; }
+.oss-lang { font-size:.58rem; color:rgba(61,214,140,.5); margin-top:8px; display:flex; gap:6px; align-items:center; }
+.ldot { width:8px; height:8px; border-radius:50%; }
+
+/* Contact */
+.contact-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+.contact-item { border:1px solid rgba(61,214,140,.12); padding:20px; }
+.contact-k { font-size:.6rem; color:rgba(61,214,140,.4); letter-spacing:3px; text-transform:uppercase; margin-bottom:6px; }
+.contact-v { font-size:.82rem; color:#dce4ec; }
+.contact-v a { color:#00c8e0; text-decoration:none; }
+.status-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 16px;
+  border:1px solid rgba(61,214,140,.3); background:rgba(61,214,140,.06); color:#3dd68c; font-size:.75rem; margin-top:16px; }
+.spulse { width:8px; height:8px; border-radius:50%; background:#3dd68c; animation:p 2s infinite; }
+@keyframes p { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(61,214,140,.4)} 50%{opacity:.5} 70%{box-shadow:0 0 0 8px transparent} }
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-trail"></div>
+<div id="progress"></div>
+
+<canvas id="c"></canvas>
+
+
+
+<!-- HUD -->
+<nav id="hud-nav">
+  <div class="hud-logo">AAK.SYS</div>
+  <div class="hud-links">
+    <div class="hud-link" data-section="0">Home</div>
+    <div class="hud-link" data-section="1">Skills</div>
+    <div class="hud-link" data-section="2">Linux</div>
+    <div class="hud-link" data-section="3">RHEL</div>
+    <div class="hud-link" data-section="4">Contact</div>
+  </div>
+</nav>
+
+<div id="hud-bottom">
+  <div class="hud-scroll-hint">
+    <div class="scroll-line"></div>
+    Scroll
+  </div>
+  <div class="hud-coords" id="hud-coords">CAM X:0.00 Y:0.00 Z:0.00</div>
+</div>
+
+<!-- Content panels (positioned/shown by JS) -->
+<div class="panel" id="panel-hero">
+  <div class="panel-inner">
+    <div class="p-tag">// root@dev.local ~ systems architect</div>
+    <div class="p-name"><em>Hello, world.</em>Abdullah<br>Al Khafaji</div>
+    <p class="p-sub">
+      I build software closest to the metal — protocols, compilers, embedded firmware, and the infrastructure that runs it all. A Linux advocate who believes the kernel is humanity's greatest engineering achievement.
+    </p>
+    <div class="p-tags">
+      <span class="ptag">Rust</span>
+      <span class="ptag">C / C++</span>
+      <span class="ptag">WebAssembly</span>
+      <span class="ptag red">Linux · Open Source</span>
+      <span class="ptag blue">Kubernetes · RKE2</span>
+      <span class="ptag">Reverse Engineering</span>
+      <span class="ptag">Electronics</span>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-skills">
+  <div class="panel-inner">
+    <div class="p-tag">// skill_matrix.rs</div>
+    <div class="p-name" style="font-size:1.8rem;margin-bottom:20px">Capabilities</div>
+    <div class="skill-row">
+      <div class="sk" style="--acc:#e06c75">
+        <span class="sk-num">01</span>
+        <div class="sk-icon">⚙️</div>
+        <div class="sk-title">Protocol Engineering</div>
+        <div class="sk-desc">Zero-copy binary parsers, memory-safe FFI, async I/O with Tokio. Correctness and speed as one.</div>
+        <div class="sk-tags"><span class="sk-tag">Rust</span><span class="sk-tag">C</span><span class="sk-tag">tokio</span><span class="sk-tag">nom</span></div>
+      </div>
+      <div class="sk" style="--acc:#61afef">
+        <span class="sk-num">02</span>
+        <div class="sk-icon">🌐</div>
+        <div class="sk-title">WebAssembly</div>
+        <div class="sk-desc">Compiling Rust to Wasm. Native speed in the browser — no GC pauses, no apologies.</div>
+        <div class="sk-tags"><span class="sk-tag">wasm-bindgen</span><span class="sk-tag">WASI</span><span class="sk-tag">wasm-pack</span></div>
+      </div>
+      <div class="sk" style="--acc:#c678dd">
+        <span class="sk-num">03</span>
+        <div class="sk-icon">🔬</div>
+        <div class="sk-title">Reverse Engineering</div>
+        <div class="sk-desc">Binary analysis, protocol dissection, firmware unpacking. Nothing stays a black box.</div>
+        <div class="sk-tags"><span class="sk-tag">Ghidra</span><span class="sk-tag">GDB</span><span class="sk-tag">frida</span></div>
+      </div>
+      <div class="sk" style="--acc:#e5c07b">
+        <span class="sk-num">04</span>
+        <div class="sk-icon">🔌</div>
+        <div class="sk-title">Electronics</div>
+        <div class="sk-desc">PCB design, embedded firmware, debugging at the oscilloscope level. SPI/I²C/JTAG.</div>
+        <div class="sk-tags"><span class="sk-tag">Embedded C</span><span class="sk-tag">PCB</span><span class="sk-tag">JTAG</span></div>
+      </div>
+      <div class="sk" style="--acc:#3dd68c; grid-column:span 2">
+        <span class="sk-num">05</span>
+        <div class="sk-icon">🖧</div>
+        <div class="sk-title">Systems & DevOps</div>
+        <div class="sk-desc">Building the platforms others deploy on — from bare-metal RHEL to full Kubernetes clusters with observability.</div>
+        <div class="sk-tags"><span class="sk-tag">Kubernetes</span><span class="sk-tag">RKE2</span><span class="sk-tag">Rancher</span><span class="sk-tag">OpenShift</span><span class="sk-tag">RHEL</span><span class="sk-tag">oVirt</span><span class="sk-tag">Helm</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-linux">
+  <div class="panel-inner">
+    <div class="p-tag">// uname -a && philosophy</div>
+    <div class="p-name" style="font-size:1.8rem;margin-bottom:20px">Linux &amp; Open Source</div>
+    <div class="nf-grid">
+      <div class="nf-art">
+<pre>    ____
+   /  __\
+  /  /
+ /  /___
+/  ____/
+\  \
+ \  \___
+  \  __/
+   \____\ </pre>
+      </div>
+      <div class="nf-info">
+        <div><span class="nf-k">OS</span><span class="nf-v">RHEL 9.4 x86_64</span></div>
+        <div><span class="nf-k">Kernel</span><span class="nf-v">6.8.9-300.el9.x86_64</span></div>
+        <div><span class="nf-k">Shell</span><span class="nf-v">bash 5.1.8 + tmux</span></div>
+        <div><span class="nf-k">Editor</span><span class="nf-v">Neovim 0.10</span></div>
+        <div><span class="nf-k">Uptime</span><span class="nf-v">847 days, 3 hrs</span></div>
+        <div><span class="nf-k">Packages</span><span class="nf-v">2,847 (rpm)</span></div>
+        <div><span class="nf-k">Philosophy</span><span class="nf-v">Free as in freedom</span></div>
+      </div>
+    </div>
+    <div class="distros">
+      <div class="distro"><div style="font-size:1.4rem">🎩</div><div class="distro-n">RHEL / CentOS</div><div class="distro-l" style="color:#e06c75">Expert</div></div>
+      <div class="distro"><div style="font-size:1.4rem">🟠</div><div class="distro-n">Ubuntu Server</div><div class="distro-l">Expert</div></div>
+      <div class="distro"><div style="font-size:1.4rem">🏗️</div><div class="distro-n">Arch Linux</div><div class="distro-l">Advanced</div></div>
+      <div class="distro"><div style="font-size:1.4rem">🐧</div><div class="distro-n">Alpine Linux</div><div class="distro-l">Expert</div></div>
+      <div class="distro"><div style="font-size:1.4rem">🔵</div><div class="distro-n">Fedora CoreOS</div><div class="distro-l">Proficient</div></div>
+      <div class="distro"><div style="font-size:1.4rem">🟣</div><div class="distro-n">Debian Stable</div><div class="distro-l">Proficient</div></div>
+    </div>
+    <div class="oss-grid">
+      <div class="oss-proj"><div class="oss-name">rust-proto-core</div><div class="oss-desc">Zero-copy binary protocol framework with derive macros</div><div class="oss-lang"><div class="ldot" style="background:#e06c75"></div>Rust · 1.2k ★</div></div>
+      <div class="oss-proj"><div class="oss-name">rhel-ansible-hardening</div><div class="oss-desc">CIS Level 2 + STIG hardening collection for RHEL 8/9</div><div class="oss-lang"><div class="ldot" style="background:#e5c07b"></div>Ansible · 634 ★</div></div>
+      <div class="oss-proj"><div class="oss-name">wasm-serde-bridge</div><div class="oss-desc">Rust↔JS type marshalling for wasm-bindgen without overhead</div><div class="oss-lang"><div class="ldot" style="background:#e06c75"></div>Rust · 847 ★</div></div>
+      <div class="oss-proj"><div class="oss-name">k8s-ebpf-tracer</div><div class="oss-desc">eBPF-based syscall tracer emitting OpenTelemetry spans</div><div class="oss-lang"><div class="ldot" style="background:#61afef"></div>C/eBPF · 411 ★</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-rhel">
+  <div class="panel-inner">
+    <div class="p-tag" style="color:rgba(224,108,117,.6)">// red hat enterprise linux · production experience</div>
+    <div class="p-name" style="font-size:1.8rem;margin-bottom:4px;color:#e06c75">⬡ RHEL Deep Dive</div>
+    <div style="font-size:.68rem;color:rgba(224,108,117,.4);letter-spacing:2px;margin-bottom:16px">RHEL 7 · 8 · 9 · FIPS · SELinux · Satellite</div>
+    <div class="code-block">
+      <div class="code-bar"><div class="cd" style="background:#ff5f57"></div><div class="cd" style="background:#febc2e"></div><div class="cd" style="background:#28c840"></div><span style="margin-left:8px;font-size:.6rem;color:#8b949e">hardening.yml</span></div>
+      <div class="code-pre"><pre><span class="cm"># CIS Level 2 + STIG — Ansible task excerpt</span>
+<span class="fn-n">- name</span>: <span class="st">Enforce FIPS 140-2 mode</span>
+  <span class="fn-n">command</span>: fips-mode-setup --enable
+  <span class="fn-n">when</span>: <span class="st">not fips_enabled.stdout | bool</span>
+
+<span class="fn-n">- name</span>: <span class="st">Author SELinux policy module</span>
+  <span class="fn-n">community.general.selinux_permissive</span>:
+    <span class="fn-n">name</span>: podman_rootless
+    <span class="fn-n">permissive</span>: <span class="kw">false</span>
+
+<span class="fn-n">- name</span>: <span class="st">Lock down SSH</span>
+  <span class="fn-n">lineinfile</span>: { path: /etc/ssh/sshd_config,
+    regexp: <span class="st">'^PermitRootLogin'</span>,
+    line: <span class="st">'PermitRootLogin no'</span> }</pre></div>
+    </div>
+    <div class="rhel-cols">
+      <div class="rcol">
+        <h4>Sys Admin</h4>
+        <ul>
+          <li>Kickstart &amp; PXE automated provisioning</li>
+          <li>SELinux custom policy authoring</li>
+          <li>systemd unit &amp; socket activation</li>
+          <li>RPM spec writing &amp; internal repos</li>
+          <li>LUKS + TPM2 auto-unlock at boot</li>
+        </ul>
+      </div>
+      <div class="rcol">
+        <h4>Security</h4>
+        <ul>
+          <li>FIPS 140-2 compliance configuration</li>
+          <li>firewalld + nftables rule authoring</li>
+          <li>auditd policy &amp; log management</li>
+          <li>Vault CA for SSH certificate auth</li>
+          <li>CIS Benchmark via STIG Ansible</li>
+        </ul>
+      </div>
+      <div class="rcol">
+        <h4>Platform</h4>
+        <ul>
+          <li>Podman rootless container pods</li>
+          <li>OpenShift 4.x on RHEL CoreOS</li>
+          <li>Image Builder for custom base images</li>
+          <li>Satellite Server patch lifecycle</li>
+          <li>Red Hat Insights CVE &amp; drift</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-contact">
+  <div class="panel-inner">
+    <div class="p-tag">// ssh contact@khafaji.dev</div>
+    <div class="p-name" style="font-size:2rem;margin-bottom:16px">Get In Touch</div>
+    <p class="p-sub">Open to systems engineering, infrastructure, low-level, and embedded roles.</p>
+    <div class="contact-grid">
+      <div class="contact-item"><div class="contact-k">Email</div><div class="contact-v"><a href="mailto:abdullah@khafaji.dev">abdullah@khafaji.dev</a></div></div>
+      <div class="contact-item"><div class="contact-k">GitHub</div><div class="contact-v"><a href="#">github.com/alkhafaji</a></div></div>
+      <div class="contact-item"><div class="contact-k">LinkedIn</div><div class="contact-v"><a href="#">/in/alkhafaji</a></div></div>
+      <div class="contact-item"><div class="contact-k">Location</div><div class="contact-v">Available Remote / On-site</div></div>
+    </div>
+    <div class="status-pill"><div class="spulse"></div> AVAILABLE FOR WORK</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+// CURSOR
+// ═══════════════════════════════════════════════════════════
+const cur = document.getElementById('cur');
+const curTrail = document.getElementById('cur-trail');
+let mx=innerWidth/2, my=innerHeight/2, tx=mx, ty=my;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; });
+(function animCur(){
+  tx += (mx-tx)*.15; ty += (my-ty)*.15;
+  cur.style.left=mx+'px'; cur.style.top=my+'px';
+  curTrail.style.left=tx+'px'; curTrail.style.top=ty+'px';
+  requestAnimationFrame(animCur);
+})();
+
+// ═══════════════════════════════════════════════════════════
+// THREE.JS SETUP
+// ═══════════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x000000);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.01, 1000);
+camera.position.set(0, 0, 5);
+
+window.addEventListener('resize', () => {
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  bgMesh.material.uniforms.uRes.value.set(innerWidth, innerHeight);
+  postMesh.material.uniforms.uRes.value.set(innerWidth, innerHeight);
+});
+
+// ═══════════════════════════════════════════════════════════
+// POST-PROCESSING RENDER TARGET
+// ═══════════════════════════════════════════════════════════
+let rtW = innerWidth, rtH = innerHeight;
+const rt = new THREE.WebGLRenderTarget(rtW, rtH, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+
+// ═══════════════════════════════════════════════════════════
+// SHADER: BACKGROUND — animated noise field
+// ═══════════════════════════════════════════════════════════
+const bgVert = `
+varying vec2 vUv;
+void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
+`;
+const bgFrag = `
+precision highp float;
+uniform float uTime;
+uniform vec2 uRes;
+uniform vec2 uMouse;
+varying vec2 vUv;
+
+// simplex noise helpers
+vec3 mod289(vec3 x){return x-floor(x*(1./289.))*289.;}
+vec4 mod289(vec4 x){return x-floor(x*(1./289.))*289.;}
+vec4 permute(vec4 x){return mod289(((x*34.)+1.)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-.85373472095314*r;}
+float snoise(vec3 v){
+  const vec2 C=vec2(1./6.,1./3.);
+  const vec4 D=vec4(0.,.5,1.,2.);
+  vec3 i=floor(v+dot(v,C.yyy));
+  vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz);
+  vec3 l=1.-g;
+  vec3 i1=min(g.xyz,l.zxy);
+  vec3 i2=max(g.xyz,l.zxy);
+  vec3 x1=x0-i1+C.xxx;
+  vec3 x2=x0-i2+C.yyy;
+  vec3 x3=x0-D.yyy;
+  i=mod289(i);
+  vec4 p=permute(permute(permute(i.z+vec4(0.,i1.z,i2.z,1.))+i.y+vec4(0.,i1.y,i2.y,1.))+i.x+vec4(0.,i1.x,i2.x,1.));
+  float n_=.142857142857;
+  vec3 ns=n_*D.wyz-D.xzx;
+  vec4 j=p-49.*floor(p*(ns.z*ns.z));
+  vec4 x_=floor(j*ns.z);
+  vec4 y_=floor(j-7.*x_);
+  vec4 x=x_*ns.x+ns.yyyy;
+  vec4 y=y_*ns.x+ns.yyyy;
+  vec4 h=1.-abs(x)-abs(y);
+  vec4 b0=vec4(x.xy,y.xy);
+  vec4 b1=vec4(x.zw,y.zw);
+  vec4 s0=floor(b0)*2.+1.;
+  vec4 s1=floor(b1)*2.+1.;
+  vec4 sh=-step(h,vec4(0.));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;
+  vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x);
+  vec3 p1=vec3(a0.zw,h.y);
+  vec3 p2=vec3(a1.xy,h.z);
+  vec3 p3=vec3(a1.zw,h.w);
+  vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+  p0*=norm.x; p1*=norm.y; p2*=norm.z; p3*=norm.w;
+  vec4 m=max(.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);
+  m=m*m;
+  return 42.*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+
+void main(){
+  vec2 uv = vUv;
+  vec2 mouse = uMouse / uRes;
+
+  // layered noise
+  float t = uTime * 0.12;
+  float n1 = snoise(vec3(uv * 2.5, t));
+  float n2 = snoise(vec3(uv * 5.0 + 0.3, t * 1.3));
+  float n3 = snoise(vec3(uv * 1.2, t * 0.7 + 10.));
+  float n = n1 * 0.5 + n2 * 0.3 + n3 * 0.2;
+
+  // mouse influence
+  float md = length(uv - mouse) * 2.0;
+  float mInfluence = exp(-md * md * 2.0) * 0.3;
+  n += mInfluence * snoise(vec3(uv * 3.0, t * 2.0));
+
+  // base dark color with green nebula tints
+  vec3 col = vec3(0.0);
+  col += vec3(0.0, 0.12, 0.06) * smoothstep(-0.2, 0.8, n);
+  col += vec3(0.02, 0.08, 0.04) * smoothstep(0.3, 1.0, n2);
+
+  // subtle grid lines
+  vec2 grid = fract(uv * 40.0);
+  float gLine = max(
+    smoothstep(0.97, 1.0, grid.x) + smoothstep(0.97, 1.0, grid.y),
+    smoothstep(0.0, 0.03, grid.x) + smoothstep(0.0, 0.03, grid.y)
+  );
+  col += vec3(0.0, 0.04, 0.02) * gLine * 0.15;
+
+  // vignette
+  float vig = 1.0 - smoothstep(0.3, 1.5, length(uv - 0.5) * 2.0);
+  col *= vig * 0.85 + 0.15;
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+const bgGeo = new THREE.PlaneGeometry(2, 2);
+const bgMat = new THREE.ShaderMaterial({
+  vertexShader: bgVert,
+  fragmentShader: bgFrag,
+  uniforms: {
+    uTime: { value: 0 },
+    uRes: { value: new THREE.Vector2(innerWidth, innerHeight) },
+    uMouse: { value: new THREE.Vector2(innerWidth/2, innerHeight/2) }
+  },
+  depthWrite: false, depthTest: false
+});
+const bgMesh = new THREE.Mesh(bgGeo, bgMat);
+bgMesh.renderOrder = -1;
+const bgScene = new THREE.Scene();
+const bgCam = new THREE.Camera();
+bgScene.add(bgMesh);
+
+// ═══════════════════════════════════════════════════════════
+// SHADER: POST-PROCESS — CRT scanlines + chromatic aberration + vignette
+// ═══════════════════════════════════════════════════════════
+const postVert = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position,1.); }`;
+const postFrag = `
+precision highp float;
+uniform sampler2D uTex;
+uniform float uTime;
+uniform vec2 uRes;
+varying vec2 vUv;
+
+void main(){
+  vec2 uv = vUv;
+
+  // Subtle barrel distortion
+  vec2 dc = uv - 0.5;
+  float r2 = dot(dc,dc);
+  uv = uv + dc * r2 * 0.035;
+
+  // Chromatic aberration
+  float ca = 0.0008 + r2 * 0.003;
+  float r = texture2D(uTex, uv + vec2(ca, 0.0)).r;
+  float g = texture2D(uTex, uv).g;
+  float b = texture2D(uTex, uv - vec2(ca, 0.0)).b;
+
+  vec3 col = vec3(r, g, b);
+
+  // Scanlines
+  float scan = sin(uv.y * uRes.y * 1.5) * 0.5 + 0.5;
+  col *= 0.93 + scan * 0.07;
+
+  // Vignette
+  float vig = smoothstep(1.1, 0.3, length(dc) * 1.8);
+  col *= vig;
+
+  // Film grain
+  float seed = dot(uv, vec2(12.9898, 78.233));
+  float noise = fract(sin(seed + uTime * 543.21) * 43758.5453);
+  col += (noise - 0.5) * 0.018;
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+const postGeo = new THREE.PlaneGeometry(2, 2);
+const postMat = new THREE.ShaderMaterial({
+  vertexShader: postVert,
+  fragmentShader: postFrag,
+  uniforms: {
+    uTex: { value: rt.texture },
+    uTime: { value: 0 },
+    uRes: { value: new THREE.Vector2(innerWidth, innerHeight) }
+  },
+  depthWrite: false, depthTest: false
+});
+const postMesh = new THREE.Mesh(postGeo, postMat);
+const postScene = new THREE.Scene();
+const postCam = new THREE.Camera();
+postScene.add(postMesh);
+
+// ═══════════════════════════════════════════════════════════
+// SHADER: PARTICLE SYSTEM with curl-noise movement
+// ═══════════════════════════════════════════════════════════
+const particleVert = `
+attribute float aSize;
+attribute float aSpeed;
+attribute float aOffset;
+attribute vec3 aColor;
+uniform float uTime;
+uniform float uScroll;
+varying vec3 vColor;
+varying float vAlpha;
+
+// hash
+float hash(float n){ return fract(sin(n)*43758.5453); }
+float hash3(vec3 p){ return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453); }
+
+void main(){
+  vColor = aColor;
+  vec3 pos = position;
+
+  // Drift particles through space over time
+  float t = uTime * aSpeed * 0.08 + aOffset;
+  pos.x += sin(t * 0.7 + aOffset * 3.1) * 1.2;
+  pos.y += cos(t * 0.5 + aOffset * 2.3) * 0.8;
+  pos.z += sin(t * 0.3 + aOffset * 1.7) * 1.5;
+
+  // scroll-based z translation
+  pos.z -= uScroll * 30.0;
+  // wrap
+  pos.z = mod(pos.z + 40.0, 80.0) - 40.0;
+
+  vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+  float dist = length(mv.xyz);
+  vAlpha = smoothstep(40.0, 2.0, dist) * 0.7;
+
+  gl_PointSize = aSize * (300.0 / dist);
+  gl_Position = projectionMatrix * mv;
+}
+`;
+const particleFrag = `
+precision mediump float;
+varying vec3 vColor;
+varying float vAlpha;
+void main(){
+  vec2 uv = gl_PointCoord - 0.5;
+  float d = length(uv);
+  if(d > 0.5) discard;
+  float alpha = (1.0 - d * 2.0) * vAlpha;
+  gl_FragColor = vec4(vColor, alpha);
+}
+`;
+
+const N = 3000;
+const pPos = new Float32Array(N * 3);
+const pSize = new Float32Array(N);
+const pSpeed = new Float32Array(N);
+const pOffset = new Float32Array(N);
+const pColor = new Float32Array(N * 3);
+const palette = [
+  [0.24, 0.84, 0.55], // green
+  [0.0,  0.78, 0.87], // cyan
+  [0.24, 0.84, 0.55],
+  [0.24, 0.84, 0.55],
+  [0.15, 0.42, 0.28], // dim green
+  [0.55, 0.32, 0.87], // purple
+];
+for (let i = 0; i < N; i++) {
+  pPos[i*3]   = (Math.random()-0.5)*50;
+  pPos[i*3+1] = (Math.random()-0.5)*30;
+  pPos[i*3+2] = (Math.random()-0.5)*80;
+  pSize[i]    = Math.random() * 2.5 + 0.5;
+  pSpeed[i]   = Math.random() * 0.5 + 0.2;
+  pOffset[i]  = Math.random() * Math.PI * 2;
+  const c = palette[Math.floor(Math.random()*palette.length)];
+  pColor[i*3]=c[0]; pColor[i*3+1]=c[1]; pColor[i*3+2]=c[2];
+}
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute('aSize', new THREE.BufferAttribute(pSize, 1));
+pGeo.setAttribute('aSpeed', new THREE.BufferAttribute(pSpeed, 1));
+pGeo.setAttribute('aOffset', new THREE.BufferAttribute(pOffset, 1));
+pGeo.setAttribute('aColor', new THREE.BufferAttribute(pColor, 3));
+const pMat = new THREE.ShaderMaterial({
+  vertexShader: particleVert,
+  fragmentShader: particleFrag,
+  uniforms: { uTime: { value: 0 }, uScroll: { value: 0 } },
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+});
+scene.add(new THREE.Points(pGeo, pMat));
+
+// ═══════════════════════════════════════════════════════════
+// SHADER: HOLOGRAPHIC FLOATING RINGS
+// ═══════════════════════════════════════════════════════════
+const ringVert = `
+uniform float uTime;
+uniform float uIndex;
+varying vec3 vNormal;
+varying vec3 vPos;
+varying float vAngle;
+void main(){
+  vNormal = normalMatrix * normal;
+  vPos = position;
+  float t = uTime * 0.3 + uIndex * 1.3;
+  float wobble = sin(uv.x * 6.28 + t) * 0.04;
+  vec3 pos = position + normal * wobble;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+}
+`;
+const ringFrag = `
+precision highp float;
+uniform float uTime;
+uniform float uIndex;
+varying vec3 vNormal;
+varying vec3 vPos;
+
+void main(){
+  vec3 norm = normalize(vNormal);
+  float t = uTime * 0.4;
+
+  // Fresnel
+  float fresnel = pow(1.0 - abs(dot(norm, vec3(0.,0.,1.))), 2.5);
+
+  // Iridescent color shift
+  float shift = sin(t + uIndex * 2.1 + vPos.y * 3.0) * 0.5 + 0.5;
+  vec3 col1 = vec3(0.24, 0.84, 0.55); // green
+  vec3 col2 = vec3(0.0,  0.78, 0.87); // cyan
+  vec3 col3 = vec3(0.78, 0.42, 0.87); // purple
+  vec3 iridCol = mix(mix(col1, col2, shift), col3, sin(t*0.7)*0.5+0.5);
+
+  // Wireframe-ish lines using fract
+  float lineX = fract(vPos.x * 8.0 + t * 0.3);
+  float lineY = fract(vPos.y * 8.0 - t * 0.2);
+  float lines = smoothstep(0.92, 1.0, lineX) + smoothstep(0.92, 1.0, lineY);
+  lines = min(lines, 1.0);
+
+  vec3 finalCol = iridCol * (fresnel * 0.7 + 0.1) + iridCol * lines * 0.5;
+  float alpha = fresnel * 0.5 + lines * 0.4 + 0.05;
+
+  gl_FragColor = vec4(finalCol, alpha * 0.7);
+}
+`;
+
+const rings = [];
+const ringConfigs = [
+  { rx:0.4, ry:0.2, rz:0, scale:2.2, tube:0.04 },
+  { rx:1.1, ry:0.8, rz:0.5, scale:1.6, tube:0.03 },
+  { rx:0.2, ry:1.4, rz:1.0, scale:2.8, tube:0.025 },
+  { rx:1.6, ry:0.1, rz:0.3, scale:1.9, tube:0.035 },
+];
+ringConfigs.forEach((cfg, i) => {
+  const geo = new THREE.TorusGeometry(1, cfg.tube, 16, 100);
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: ringVert,
+    fragmentShader: ringFrag,
+    uniforms: { uTime: { value: 0 }, uIndex: { value: i } },
+    transparent: true, side: THREE.DoubleSide, depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.scale.setScalar(cfg.scale);
+  mesh.rotation.set(cfg.rx, cfg.ry, cfg.rz);
+  scene.add(mesh);
+  rings.push({ mesh, mat, cfg });
+});
+
+// ═══════════════════════════════════════════════════════════
+// SHADER: CORE SPHERE (center piece)
+// ═══════════════════════════════════════════════════════════
+const sphereVert = `
+uniform float uTime;
+varying vec3 vNormal;
+varying vec3 vPos;
+varying vec2 vUv;
+
+// simplex 3d (compact)
+vec3 mod289v(vec3 x){return x-floor(x/289.)*289.;}
+vec4 mod289v(vec4 x){return x-floor(x/289.)*289.;}
+vec4 perm(vec4 x){return mod289v(((x*34.)+1.)*x);}
+float snoise3(vec3 v){
+  const vec2 C=vec2(1./6.,1./3.);
+  vec3 i=floor(v+dot(v,C.yyy));
+  vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz);
+  vec3 l=1.-g; vec3 i1=min(g,l.zxy); vec3 i2=max(g,l.zxy);
+  vec3 x1=x0-i1+C.x; vec3 x2=x0-i2+C.y; vec3 x3=x0-.5;
+  i=mod289v(i);
+  vec4 p=perm(perm(perm(i.z+vec4(0.,i1.z,i2.z,1.))+i.y+vec4(0.,i1.y,i2.y,1.))+i.x+vec4(0.,i1.x,i2.x,1.));
+  vec3 ns=vec3(0.142857,-0.142857,.285714)*vec3(7.,1.,7.)-vec3(.142857);
+  vec4 j=p-49.*floor(p*(ns.z*ns.z));
+  vec4 x_=floor(j*ns.z); vec4 y_=floor(j-7.*x_);
+  vec4 x=x_*ns.x+ns.y; vec4 y=y_*ns.x+ns.y;
+  vec4 h=1.-abs(x)-abs(y);
+  vec4 b0=vec4(x.xy,y.xy); vec4 b1=vec4(x.zw,y.zw);
+  vec4 s0=floor(b0)*2.+1.; vec4 s1=floor(b1)*2.+1.;
+  vec4 sh=-step(h,vec4(0.));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy; vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x); vec3 p1=vec3(a0.zw,h.y);
+  vec3 p2=vec3(a1.xy,h.z); vec3 p3=vec3(a1.zw,h.w);
+  vec4 norm=1.79284291-.85373472*vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3));
+  p0*=norm.x; p1*=norm.y; p2*=norm.z; p3*=norm.w;
+  vec4 m=max(.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);
+  m=m*m; return 42.*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+
+void main(){
+  vNormal = normalMatrix * normal;
+  vUv = uv;
+  float t = uTime * 0.25;
+  float disp = snoise3(normal * 2.5 + t) * 0.18
+             + snoise3(normal * 5.0 - t * 0.7) * 0.08;
+  vec3 displaced = position + normal * disp;
+  vPos = displaced;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
+}
+`;
+const sphereFrag = `
+precision highp float;
+uniform float uTime;
+varying vec3 vNormal;
+varying vec3 vPos;
+varying vec2 vUv;
+void main(){
+  vec3 n = normalize(vNormal);
+  float t = uTime * 0.3;
+  float fresnel = pow(1.0 - abs(dot(n, vec3(0.,0.,1.))), 3.0);
+
+  // animated color bands
+  float band = sin(vPos.y * 6.0 + t) * 0.5 + 0.5;
+  float band2 = sin(vPos.x * 4.0 - t * 0.7 + 1.5) * 0.5 + 0.5;
+  vec3 cA = vec3(0.15, 0.82, 0.48);
+  vec3 cB = vec3(0.0,  0.6,  0.82);
+  vec3 cC = vec3(0.5,  0.2,  0.82);
+  vec3 col = mix(cA, cB, band);
+  col = mix(col, cC, band2 * 0.3);
+  col *= fresnel * 1.5 + 0.2;
+
+  float alpha = fresnel * 0.8 + 0.1;
+  gl_FragColor = vec4(col, alpha);
+}
+`;
+const sphereGeo = new THREE.IcosahedronGeometry(1, 5);
+const sphereMat = new THREE.ShaderMaterial({
+  vertexShader: sphereVert,
+  fragmentShader: sphereFrag,
+  uniforms: { uTime: { value: 0 } },
+  transparent: true, side: THREE.DoubleSide, depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+scene.add(sphere);
+
+// ═══════════════════════════════════════════════════════════
+// SHADER: GRID FLOOR
+// ═══════════════════════════════════════════════════════════
+const gridVert = `
+varying vec2 vUv;
+varying float vDist;
+void main(){
+  vUv = uv;
+  vec4 worldPos = modelMatrix * vec4(position, 1.0);
+  vDist = length(worldPos.xz);
+  gl_Position = projectionMatrix * viewMatrix * worldPos;
+}
+`;
+const gridFrag = `
+precision highp float;
+uniform float uTime;
+varying vec2 vUv;
+varying float vDist;
+void main(){
+  vec2 grid = fract(vUv * 60.0);
+  float line = max(
+    smoothstep(0.96,1.0,grid.x) + smoothstep(0.0,0.04,grid.x),
+    smoothstep(0.96,1.0,grid.y) + smoothstep(0.0,0.04,grid.y)
+  );
+  line = min(line, 1.0);
+
+  // pulse wave from center
+  float pulse = fract(vDist * 0.15 - uTime * 0.25);
+  float pLine = smoothstep(0.0, 0.05, pulse) * smoothstep(0.15, 0.05, pulse);
+
+  float fade = 1.0 - smoothstep(8.0, 30.0, vDist);
+  float alpha = (line * 0.25 + pLine * 0.15) * fade;
+
+  vec3 col = vec3(0.12, 0.7, 0.38);
+  gl_FragColor = vec4(col, alpha);
+}
+`;
+const gridPlanGeo = new THREE.PlaneGeometry(80, 80, 1, 1);
+const gridMat = new THREE.ShaderMaterial({
+  vertexShader: gridVert, fragmentShader: gridFrag,
+  uniforms: { uTime: { value: 0 } },
+  transparent: true, side: THREE.DoubleSide, depthWrite: false
+});
+const gridMesh = new THREE.Mesh(gridPlanGeo, gridMat);
+gridMesh.rotation.x = -Math.PI/2;
+gridMesh.position.y = -3;
+scene.add(gridMesh);
+
+// ═══════════════════════════════════════════════════════════
+// FLOATING WIREFRAME ICOSAHEDRA (skill nodes)
+// ═══════════════════════════════════════════════════════════
+const icoVert = `
+uniform float uTime;
+uniform float uIndex;
+varying vec3 vPos;
+void main(){
+  vPos = position;
+  float t = uTime * 0.5 + uIndex;
+  float pulse = sin(t) * 0.06 + 1.0;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position * pulse, 1.0);
+}
+`;
+const icoFrag = `
+precision mediump float;
+uniform float uTime;
+uniform float uIndex;
+uniform vec3 uColor;
+varying vec3 vPos;
+void main(){
+  float t = uTime * 0.4 + uIndex;
+  float glow = sin(t) * 0.3 + 0.7;
+  gl_FragColor = vec4(uColor * glow, 0.8);
+}
+`;
+
+const icoData = [
+  { pos: [-6, 2, -4],   color: [0.88, 0.42, 0.46], size: 0.5 },
+  { pos: [5,  3, -6],   color: [0.38, 0.69, 0.94], size: 0.6 },
+  { pos: [-4, -2, -8],  color: [0.78, 0.42, 0.87], size: 0.45 },
+  { pos: [7,  -1, -5],  color: [0.90, 0.75, 0.48], size: 0.55 },
+  { pos: [0,  4, -10],  color: [0.24, 0.84, 0.55], size: 0.7 },
+  { pos: [-8, 0, -7],   color: [0.34, 0.71, 0.84], size: 0.4 },
+];
+const icoNodes = [];
+icoData.forEach((d, i) => {
+  const geo = new THREE.IcosahedronGeometry(d.size, 0);
+  const edges = new THREE.EdgesGeometry(geo);
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: icoVert, fragmentShader: icoFrag,
+    uniforms: {
+      uTime: { value: 0 }, uIndex: { value: i },
+      uColor: { value: new THREE.Vector3(...d.color) }
+    },
+    transparent: true, blending: THREE.AdditiveBlending
+  });
+  const mesh = new THREE.LineSegments(edges, mat);
+  mesh.position.set(...d.pos);
+  scene.add(mesh);
+  icoNodes.push({ mesh, mat });
+});
+
+// ═══════════════════════════════════════════════════════════
+// SCROLL + CAMERA ANIMATION
+// ═══════════════════════════════════════════════════════════
+const sections = [
+  { scrollT: 0,   camPos: [0, 0, 5],    camLook: [0, 0, 0],    panel: 'panel-hero' },
+  { scrollT: 0.2, camPos: [-3, 1, 2],   camLook: [-1, 0, -2],  panel: 'panel-skills' },
+  { scrollT: 0.4, camPos: [3, -1, 0],   camLook: [1, -0.5, -3],panel: 'panel-linux' },
+  { scrollT: 0.6, camPos: [-2, 2, -2],  camLook: [0, 0.5, -5], panel: 'panel-rhel' },
+  { scrollT: 0.8, camPos: [0, 0, -5],   camLook: [0, 0, -10],  panel: 'panel-contact' },
+];
+
+// Panel positions (screen space) for each section
+const panelPositions = {
+  'panel-hero':    { left:'8vw',  top:'50%', transform:'translateY(-50%)' },
+  'panel-skills':  { left:'5vw',  top:'50%', transform:'translateY(-50%)', maxWidth:'700px' },
+  'panel-linux':   { right:'5vw', top:'50%', transform:'translateY(-50%)', maxWidth:'640px' },
+  'panel-rhel':    { left:'5vw',  top:'50%', transform:'translateY(-50%)', maxWidth:'700px' },
+  'panel-contact': { left:'50%',  top:'50%', transform:'translate(-50%,-50%)' },
+};
+
+// Apply initial panel positions
+Object.entries(panelPositions).forEach(([id, pos]) => {
+  const el = document.getElementById(id);
+  Object.assign(el.style, pos);
+  el.style.maxWidth = pos.maxWidth || '580px';
+  el.style.width = '90vw';
+});
+
+// ── WHEEL-DRIVEN CAMERA SCROLL ──────────────────────────────
+// We drive targetScrollT from wheel events on the document.
+// If the wheel event originates inside a .panel-inner that can
+// still scroll in that direction, we let the browser handle it
+// natively and do NOT advance the camera.
+
+let targetScrollT = 0;
+let scrollT = 0;
+
+function canPanelScroll(el, deltaY) {
+  // Walk up to find the nearest scrollable panel-inner
+  let node = el;
+  while (node && node !== document.body) {
+    if (node.classList && node.classList.contains('panel-inner')) {
+      const atTop    = node.scrollTop <= 0;
+      const atBottom = node.scrollTop + node.clientHeight >= node.scrollHeight - 1;
+      // If scrolling down and not at bottom, or up and not at top → let it scroll
+      if (deltaY > 0 && !atBottom) return true;
+      if (deltaY < 0 && !atTop)    return true;
+      return false; // panel is at its limit — hand off to camera
+    }
+    node = node.parentElement;
+  }
+  return false; // not inside a panel
+}
+
+document.addEventListener('wheel', (e) => {
+  if (canPanelScroll(e.target, e.deltaY)) return; // native panel scroll wins
+  e.preventDefault();
+  targetScrollT = Math.min(1, Math.max(0, targetScrollT + e.deltaY * 0.0003));
+  document.getElementById('progress').style.width = (targetScrollT * 100) + '%';
+}, { passive: false });
+
+// ── TOUCH SUPPORT (mobile swipe) ────────────────────────────
+let touchStartY = 0;
+let touchLastY = 0;
+let touchOnPanel = false;
+let activePanelEl = null;
+
+document.addEventListener('touchstart', (e) => {
+  touchStartY = e.touches[0].clientY;
+  touchLastY  = touchStartY;
+  // Detect if touch started inside a panel-inner
+  activePanelEl = null;
+  let node = e.target;
+  while (node && node !== document.body) {
+    if (node.classList && node.classList.contains('panel-inner')) {
+      activePanelEl = node;
+      break;
+    }
+    node = node.parentElement;
+  }
+  touchOnPanel = !!activePanelEl;
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  const currentY = e.touches[0].clientY;
+  const deltaY   = touchLastY - currentY; // positive = swipe up = scroll down
+  touchLastY     = currentY;
+
+  if (touchOnPanel && activePanelEl) {
+    // Check if the panel can still absorb this scroll
+    if (canPanelScroll(activePanelEl, deltaY)) {
+      // Let browser handle native panel scroll — do nothing
+      return;
+    }
+    // Panel hit its limit, fall through to camera
+  }
+
+  // Drive camera
+  e.preventDefault();
+  targetScrollT = Math.min(1, Math.max(0, targetScrollT + deltaY * 0.0008));
+  document.getElementById('progress').style.width = (targetScrollT * 100) + '%';
+}, { passive: false });
+
+// Nav clicks — jump to section
+document.querySelectorAll('.hud-link').forEach(link => {
+  link.addEventListener('click', () => {
+    const idx = parseInt(link.dataset.section);
+    targetScrollT = sections[idx].scrollT;
+    document.getElementById('progress').style.width = (targetScrollT * 100) + '%';
+  });
+});
+
+function lerp(a, b, t) { return a + (b-a)*t; }
+function lerpV3(a, b, t) { return [lerp(a[0],b[0],t), lerp(a[1],b[1],t), lerp(a[2],b[2],t)]; }
+
+let camPos = [0,0,5], camLook = [0,0,0];
+let currentSection = 0;
+const camTarget = new THREE.Vector3();
+
+// Mouse parallax
+let mouseNX = 0, mouseNY = 0;
+document.addEventListener('mousemove', e => {
+  mouseNX = (e.clientX/innerWidth - 0.5) * 2;
+  mouseNY = (e.clientY/innerHeight - 0.5) * 2;
+  bgMat.uniforms.uMouse.value.set(e.clientX, innerHeight - e.clientY);
+});
+
+// ═══════════════════════════════════════════════════════════
+// ANIMATION LOOP
+// ═══════════════════════════════════════════════════════════
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  const dt = clock.getDelta ? 0.016 : 0.016;
+
+  // Smooth scroll
+  scrollT += (targetScrollT - scrollT) * 0.05;
+
+  // Find current section pair for interpolation
+  let secA = sections[0], secB = sections[1], localT = 0;
+  for (let i = 0; i < sections.length - 1; i++) {
+    if (scrollT >= sections[i].scrollT && scrollT <= sections[i+1].scrollT) {
+      const range = sections[i+1].scrollT - sections[i].scrollT;
+      localT = (scrollT - sections[i].scrollT) / range;
+      // ease
+      localT = localT * localT * (3 - 2*localT);
+      secA = sections[i];
+      secB = sections[i+1];
+      break;
+    } else if (scrollT > sections[sections.length-1].scrollT) {
+      secA = secB = sections[sections.length-1];
+      localT = 0;
+    }
+  }
+
+  // Interpolate camera
+  const tPos = lerpV3(secA.camPos, secB.camPos, localT);
+  const tLook = lerpV3(secA.camLook, secB.camLook, localT);
+  camPos[0] = lerp(camPos[0], tPos[0], 0.04);
+  camPos[1] = lerp(camPos[1], tPos[1], 0.04);
+  camPos[2] = lerp(camPos[2], tPos[2], 0.04);
+  camLook[0] = lerp(camLook[0], tLook[0], 0.04);
+  camLook[1] = lerp(camLook[1], tLook[1], 0.04);
+  camLook[2] = lerp(camLook[2], tLook[2], 0.04);
+
+  // Mouse parallax offset
+  camera.position.set(
+    camPos[0] + mouseNX * 0.3,
+    camPos[1] - mouseNY * 0.2,
+    camPos[2]
+  );
+  camTarget.set(camLook[0], camLook[1], camLook[2]);
+  camera.lookAt(camTarget);
+
+  // Update HUD coords
+  document.getElementById('hud-coords').textContent =
+    `CAM X:${camera.position.x.toFixed(2)} Y:${camera.position.y.toFixed(2)} Z:${camera.position.z.toFixed(2)}`;
+
+  // Show/hide panels
+  const nearSection = scrollT < 0.1 ? 0
+    : scrollT < 0.3 ? 1
+    : scrollT < 0.5 ? 2
+    : scrollT < 0.7 ? 3 : 4;
+  sections.forEach((s, i) => {
+    const el = document.getElementById(s.panel);
+    if (i === nearSection) el.classList.add('visible');
+    else el.classList.remove('visible');
+  });
+
+  // Update shader uniforms
+  bgMat.uniforms.uTime.value = t;
+  pMat.uniforms.uTime.value = t;
+  pMat.uniforms.uScroll.value = scrollT;
+  postMat.uniforms.uTime.value = t;
+  sphereMat.uniforms.uTime.value = t;
+  gridMat.uniforms.uTime.value = t;
+  rings.forEach(r => { r.mat.uniforms.uTime.value = t; });
+  icoNodes.forEach(n => { n.mat.uniforms.uTime.value = t; });
+
+  // Animate sphere & rings
+  sphere.rotation.y = t * 0.12;
+  sphere.rotation.x = t * 0.07;
+  rings.forEach((r, i) => {
+    r.mesh.rotation.x += 0.003 * (i%2===0 ? 1 : -1);
+    r.mesh.rotation.y += 0.002 * (i%3===0 ? 1 : -1);
+    r.mesh.rotation.z += 0.001;
+  });
+  icoNodes.forEach((n, i) => {
+    n.mesh.rotation.x = t * 0.3 * (i%2===0?1:-1);
+    n.mesh.rotation.y = t * 0.4;
+  });
+
+  // Render to render target first
+  renderer.setRenderTarget(rt);
+  renderer.clear();
+  renderer.render(bgScene, bgCam);
+  renderer.render(scene, camera);
+
+  // Then post-process pass to screen
+  renderer.setRenderTarget(null);
+  renderer.render(postScene, postCam);
+}
+animate();
+</script>
+</body>
+</html>
